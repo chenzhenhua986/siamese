@@ -1,0 +1,300 @@
+name: "siamese_net"
+layer {
+  name: "data"
+  type: "ImageData"
+  top: "data"
+  top: "label"
+  include: {phase: TRAIN}
+  transform_param {
+    mirror: false
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+    crop_size: 512
+  }
+  image_data_param {
+    source: "/l/vision/v5/chen478/siamese/train1"
+    batch_size: 10
+  }
+}
+
+layer {
+  name: "data_p"
+  type: "ImageData"
+  top: "data_p"
+  top: "label_p"
+  include: {phase: TRAIN}
+  transform_param {
+    mirror: false
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+    crop_size: 512
+  }
+  image_data_param {
+    source: "/l/vision/v5/chen478/siamese/train2"
+    batch_size: 10
+  }
+}
+
+layer {
+  name: "label"
+  type: "Python"
+  bottom: "label"
+  bottom: "label_p"
+  top: "sim"
+  python_param {
+    module: "siamese"
+    layer: "SiameseLabels"
+  }
+  include: { phase: TRAIN }
+}
+
+layer {
+  name: "data"
+  type: "ImageData"
+  top: "data"
+  top: "label"
+  include: {phase: TEST}
+  transform_param {
+    mirror: false
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+    crop_size: 512
+  }
+  image_data_param {
+    source: "/l/vision/v5/chen478/siamese/test1"
+    batch_size: 10
+  }
+}
+
+layer {
+  name: "data_p"
+  type: "ImageData"
+  top: "data_p"
+  top: "label_p"
+  include: {phase: TEST}
+  transform_param {
+    mirror: false
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+    crop_size: 512
+  }
+  image_data_param {
+    source: "/l/vision/v5/chen478/siamese/test2"
+    batch_size: 10
+  }
+}
+
+layer {
+  name: "label"
+  type: "Python"
+  bottom: "label"
+  bottom: "label_p"
+  top: "sim"
+  python_param {
+    module: "siamese"
+    layer: "SiameseLabels"
+  }
+  include: { phase: TEST }
+}
+
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "data"
+  top: "conv1"
+  param {
+    name: "conv1_w"
+    lr_mult: 1
+  }
+  param {
+    name: "conv1_b"
+    lr_mult: 2
+  }
+  convolution_param {
+    num_output: 20
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+
+layer {
+	bottom: "conv1"
+	top: "conv1"
+	name: "bn_conv1"
+	type: "BatchNorm"
+  	param {
+    		lr_mult: 0
+ 	 }
+  	param {
+    		lr_mult: 0
+  	}
+  	param {
+    		lr_mult: 0
+  	}
+}
+
+layer {
+	bottom: "conv1"
+	top: "conv1"
+	name: "scale_conv1"
+	type: "Scale"
+	scale_param {
+		bias_term: true
+	}
+}
+
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 5
+    stride: 2
+  }
+}
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "pool1"
+  top: "ip1"
+  param {
+    name: "ip1_w"
+    lr_mult: 1
+  }
+  param {
+    name: "ip1_b"
+    lr_mult: 2
+  }
+  inner_product_param {
+    num_output: 50
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+layer {
+  name: "relu1"
+  type: "PReLU"
+  bottom: "ip1"
+  top: "ip1"
+}
+layer {
+  name: "conv1_p"
+  type: "Convolution"
+  bottom: "data_p"
+  top: "conv1_p"
+  param {
+    name: "conv1_w"
+    lr_mult: 1
+  }
+  param {
+    name: "conv1_b"
+    lr_mult: 2
+  }
+  convolution_param {
+    num_output: 20
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+
+layer {
+        bottom: "conv1_p"
+        top: "conv1_p"
+        name: "bn_conv1_p"
+        type: "BatchNorm"
+        param {
+                lr_mult: 0
+         }
+        param {
+                lr_mult: 0
+        }
+        param {
+                lr_mult: 0
+        }
+}
+
+layer {
+        bottom: "conv1_p"
+        top: "conv1_p"
+        name: "scale_conv1_p"
+        type: "Scale"
+        scale_param {
+                bias_term: true
+        }
+}
+
+layer {
+  name: "pool1_p"
+  type: "Pooling"
+  bottom: "conv1_p"
+  top: "pool1_p"
+  pooling_param {
+    pool: MAX
+    kernel_size: 5
+    stride: 2
+  }
+}
+layer {
+  name: "ip1_p"
+  type: "InnerProduct"
+  bottom: "pool1_p"
+  top: "ip1_p"
+  param {
+    name: "ip1_w"
+    lr_mult: 1
+  }
+  param {
+    name: "ip1_b"
+    lr_mult: 2
+  }
+  inner_product_param {
+    num_output: 50
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+layer {
+  name: "relu1_p"
+  type: "PReLU"
+  bottom: "ip1_p"
+  top: "ip1_p"
+}
+layer {
+  name: "loss"
+  type: "ContrastiveLoss"
+  bottom: "ip1"
+  bottom: "ip1_p"
+  bottom: "sim"
+  top: "loss"
+  contrastive_loss_param {
+    margin: 1
+  }
+}
